@@ -5,7 +5,7 @@ import { cors } from "hono/cors"
 import { db } from "./db"
 
 const app = new Hono()
-app.use("/api/*", cors({ origin: ["http://localhost:5173"] }))
+app.use("/api/*", cors({ origin: ["http://localhost:5173", "https://pani-limie.netlify.app"] }))
 
 app.get("/", (c) => c.text("Pani limiè!"))
 

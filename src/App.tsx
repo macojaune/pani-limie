@@ -116,6 +116,12 @@ const App = () => {
               </div>
             </div>
           )}
+          <p className="text-center">
+            Pondu à la bougie par{" "}
+            <a target="_blank" href="https://marvinl.com" className="font-semibold underline hover:underline-offset-8">
+              MarvinL.com
+            </a>
+          </p>
         </div>
         <div className="order-1 w-full md:order-2 md:w-2/3 md:flex-grow">{displayMap}</div>
       </main>
