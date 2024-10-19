@@ -108,26 +108,28 @@ const App = () => {
               <div className="relative mt-8 w-full">
                 <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
                 <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
-                  {powerStatuses?.map(({ id, latitude, longitude, hasPower, createdAt }) => (
-                    <button
-                      onClick={() => map?.flyTo([latitude, longitude], 16, { animate: true, duration: 0.8 })}
-                      key={id}
-                      className={twMerge(
-                        "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
-                        !hasPower && "border-slate-800 bg-slate-800 text-yellow-400"
-                      )}
-                    >
-                      <div className={twMerge("flex w-full flex-row items-center justify-between gap-2 font-sans")} key={id}>
-                        {hasPower ? (
-                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">💡</span>
-                        ) : (
-                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">🕯️</span>
+                  {powerStatuses
+                    ?.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map(({ id, latitude, longitude, hasPower, createdAt }) => (
+                      <button
+                        onClick={() => map?.flyTo([latitude, longitude], 16, { animate: true, duration: 0.8 })}
+                        key={id}
+                        className={twMerge(
+                          "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
+                          !hasPower && "border-slate-800 bg-slate-800 text-yellow-400"
                         )}
-                        clique pour y aller
-                        <TimeAgo date={createdAt} className="ml-auto" />
-                      </div>
-                    </button>
-                  ))}
+                      >
+                        <div className={twMerge("flex w-full flex-row items-center justify-between gap-2 font-sans")} key={id}>
+                          {hasPower ? (
+                            <span className="mr-2 rounded-full bg-white p-1 text-3xl">💡</span>
+                          ) : (
+                            <span className="mr-2 rounded-full bg-white p-1 text-3xl">🕯️</span>
+                          )}
+                          clique pour y aller
+                          <TimeAgo date={createdAt} className="ml-auto" />
+                        </div>
+                      </button>
+                    ))}
                 </div>
               </div>
             </>
