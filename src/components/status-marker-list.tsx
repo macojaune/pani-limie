@@ -4,6 +4,9 @@ import { Marker, Popup, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { type PowerStatus } from "../../server/db/schema";
 import TimeAgo from "./time-ago";
+import { divIcon, point } from "leaflet";
+import { counting } from "radash";
+import { twMerge } from "tailwind-merge";
 
 const StatusList = ({
   powerStatuses,
@@ -13,6 +16,7 @@ const StatusList = ({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
+  const [test, setTest] = useState(null);
   const map = useMapEvents({
     locationfound: (e) => {
       console.log("location found", e);
@@ -35,6 +39,25 @@ const StatusList = ({
     <>
       {userLocation && <Marker position={userLocation} />}
       <MarkerClusterGroup
+        iconCreateFunction={(cluster) => {
+          const markers = cluster.getAllChildMarkers();
+          const res = counting(markers, (m) =>
+            m.options.title === "💡" ? "light" : "dark",
+          );
+
+          return divIcon({
+            html: `<div class="aspect-square flex items-center justify-center">
+              <span class="text-base font-medium text-white">${cluster.getChildCount()}</div>
+            </div>`,
+            className: twMerge(
+              "border-4 rounded-full ",
+              (res?.light ?? 0) > (res?.dark ?? 0)
+                ? "border-green-500/10 bg-green-500/90"
+                : "border-red-500/10 bg-red-500/90",
+            ),
+            iconSize: point(60, 60),
+          });
+        }}
         chunkedLoading
         removeOutsideVisibleBounds
         animate
