@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 
-const useRelativeTime = (date: string) => {
+const useRelativeTime = (date: string | Date) => {
   const [relativeTime, setRelativeTime] = useState("")
   useEffect(() => {
     const updateRelativeTime = () => {
