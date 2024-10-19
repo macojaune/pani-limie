@@ -28,3 +28,6 @@ dist-ssr
 
 # Drizle
 drizzle/
+
+# Local Netlify folder
+.netlify

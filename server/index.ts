@@ -1,9 +1,6 @@
-import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import { powerStatuses } from "./db/schema"
 import { cors } from "hono/cors"
-
-import { eq } from "drizzle-orm"
 
 import { db } from "./db"
 
