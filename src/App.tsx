@@ -10,22 +10,24 @@ import { InsertPowerStatus, type PowerStatus } from "../server/db/schema"
 import useRelativeTime from "./useRelativeTime"
 import { twMerge } from "tailwind-merge"
 
-const TimeAgo = ({ date }: { date: Date }) => {
+const TimeAgo = ({ date, className }: { date: Date; className?: string }) => {
   const relativeTime = useRelativeTime(date)
-  return <span className="font-mono text-xs">{relativeTime}</span>
+  return <span className={twMerge("font-mono text-xs", className)}>{relativeTime}</span>
 }
 
 const App = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [map, setMap] = useState<Map | null>(null)
+  const [selected, setSelected] = useState<boolean | null>(null)
   const queryClient = useQueryClient()
   const { data: powerStatuses } = useQuery<PowerStatus[]>({
     queryKey: ["powerStatuses"],
     queryFn: async () => await ky.get(import.meta.env.VITE_API_URL + "/power-statuses").json(),
   })
 
-  const { mutate } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: async (hasPower: boolean) => {
+      setSelected(hasPower)
       const newStatus: InsertPowerStatus = {
         id: Date.now().toString(),
         latitude: userLocation?.[0] ?? 0,
@@ -60,7 +62,7 @@ const App = () => {
   }
   const displayMap = useMemo(
     () => (
-      <MapContainer ref={setMap} zoom={10} center={[16.265, -61.551]} style={{ height: "100%", minHeight: "400px" }}>
+      <MapContainer ref={setMap} zoom={9} maxZoom={16} center={[16.265, -61.551]} style={{ height: "100%", minHeight: "400px" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {userLocation && <Marker position={userLocation} />}
         <StatusList powerStatuses={powerStatuses} />
@@ -76,7 +78,7 @@ const App = () => {
       </header>
       <main className="flex flex-grow flex-col md:flex-row">
         <div className="order-2 flex w-full flex-grow flex-col items-center justify-center gap-2 p-4 md:order-1 md:w-1/3 md:flex-grow-0 md:gap-4">
-          <h2 className="w-full text-left text-2xl font-medium">Chez toi c'est comment ?</h2>
+          <h2 className="mb-2 w-full text-center text-2xl font-medium md:text-left">Chez toi c'est comment ?</h2>
           {!userLocation ? (
             <div className="flex items-center justify-center md:min-h-dvh">
               <button
@@ -93,36 +95,36 @@ const App = () => {
                   onClick={() => mutate(true)}
                   className="flex w-full flex-row items-center justify-center gap-2 rounded-md bg-amber-400 px-6 py-4 font-bold text-slate-800 transition duration-300 hover:bg-yellow-400 hover:text-white md:flex-col md:gap-4"
                 >
-                  <Lightbulb size={33} className="mr-2" /> J'ai de l'électricité
+                  <Lightbulb size={33} className={twMerge(isPending && selected === true && "animate-ping")} /> J'ai de l'électricité
                 </button>
                 <button
                   onClick={() => mutate(false)}
                   className="flex w-full flex-row items-center justify-center gap-2 rounded-md bg-slate-800 px-6 py-4 font-bold text-white transition duration-300 hover:text-amber-400 md:flex-col md:gap-4"
                 >
-                  <LightbulbOff size={33} className="mr-2" />
+                  <LightbulbOff size={33} className={twMerge(isPending && selected === false && "animate-ping")} />
                   J'ai pas d'électricité
                 </button>
               </div>
               <div className="relative mt-8 w-full">
                 <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
-                <div className="flex flex-col items-center justify-center gap-2 overflow-auto">
+                <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
                   {powerStatuses?.map(({ id, latitude, longitude, hasPower, createdAt }) => (
                     <button
-                      onClick={() => map?.flyTo([latitude, longitude], 18, { animate: true, duration: 0.8 })}
+                      onClick={() => map?.flyTo([latitude, longitude], 16, { animate: true, duration: 0.8 })}
                       key={id}
                       className={twMerge(
-                        "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 px-2 py-3 font-mono text-xs",
+                        "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
                         !hasPower && "border-slate-800 bg-slate-800 text-yellow-400"
                       )}
                     >
-                      <div className={twMerge("flex w-full flex-row items-center justify-between gap-2")} key={id}>
+                      <div className={twMerge("flex w-full flex-row items-center justify-between gap-2 font-sans")} key={id}>
                         {hasPower ? (
-                          <span className="rounded-full bg-white p-1 text-3xl">💡</span>
+                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">💡</span>
                         ) : (
-                          <span className="rounded-full bg-white p-1 text-3xl">🕯️</span>
+                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">🕯️</span>
                         )}
                         clique pour y aller
-                        <TimeAgo date={createdAt} />
+                        <TimeAgo date={createdAt} className="ml-auto" />
                       </div>
                     </button>
                   ))}

@@ -1,8 +1,11 @@
 import { Hono } from "hono"
 import { powerStatuses } from "./db/schema"
 import { cors } from "hono/cors"
-
 import { db } from "./db"
+
+const obfuscateCoordinate = (coord: number, factor = 0.001) => {
+  return coord + (Math.random() - 0.667) * factor
+}
 
 const app = new Hono()
 app.use("/api/*", cors({ origin: ["http://localhost:5173", "https://pani-limie.netlify.app"] }))
@@ -12,7 +15,12 @@ app.get("/", (c) => c.text("Pani limiè!"))
 app.get("/api/power-statuses", async (c) => {
   try {
     const statuses = await db.select().from(powerStatuses).all()
-    return c.json(statuses)
+    const obscuredStatuses = statuses.map((status) => ({
+      ...status,
+      latitude: obfuscateCoordinate(status.latitude),
+      longitude: obfuscateCoordinate(status.longitude),
+    }))
+    return c.json(obscuredStatuses)
   } catch (error) {
     console.error("Error fetching power statuses:", error)
     return c.json({ error: "Failed to fetch power statuses" }, 500)

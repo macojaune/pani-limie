@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "bun run server/index.ts",
+    "dev:backend": "bun run --watch server/index.ts",
     "dev": "concurrently \"bun dev:frontend\" \"bun dev:backend\"",
     "build": "tsc && vite build",
     "lint": "eslint .",
