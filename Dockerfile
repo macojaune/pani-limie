@@ -17,4 +17,4 @@ COPY server ./
 EXPOSE 3000
 
 # Run your app
-CMD ["bun", "run", "dev:backend"]
+CMD ["bun", "run", "index.ts"]
