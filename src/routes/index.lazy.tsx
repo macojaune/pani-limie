@@ -94,17 +94,22 @@ function HomePage() {
           <h2 className="mb-2 w-full text-center text-2xl font-medium md:text-left">
             Chez toi c'est comment ?
           </h2>
-          {!userLocation ? (
-            <div className="flex items-center justify-center md:min-h-dvh">
+          {!userLocation && (
+            <div className="gap-3 flex flex-col items-center justify-center">
               <button
                 className="rounded-sm border border-gray-300 px-4 py-2 font-bold text-gray-700 transition duration-300 hover:bg-gray-100"
                 onClick={getLocation}
               >
                 Activer ma localisation
               </button>
+              <p className="text-sm text-justify w-3/4">
+                Le site est basé sur la participation de la population, plus il
+                y a de partages et plus la carte sera à jour.
+              </p>
             </div>
-          ) : (
-            <>
+          )}
+          <>
+            {userLocation && (
               <div className="flex w-full flex-col gap-4 md:flex-row">
                 <button
                   onClick={() => mutate(true)}
@@ -131,56 +136,54 @@ function HomePage() {
                   J'ai pas d'électricité
                 </button>
               </div>
-              <div className="relative mt-8 w-full">
-                <h3 className="mb-4 text-left text-lg font-medium">
-                  Historique
-                </h3>
-                <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
-                  {powerStatuses
-                    ?.sort(
-                      (a, b) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                    )
-                    .map(({ id, latitude, longitude, hasPower, createdAt }) => (
-                      <button
-                        onClick={() =>
-                          map?.flyTo([latitude, longitude], 16, {
-                            animate: true,
-                            duration: 0.8,
-                          })
-                        }
-                        key={id}
+            )}
+            <div className="relative mt-8 w-full">
+              <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
+              <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
+                {powerStatuses
+                  ?.sort(
+                    (a, b) =>
+                      new Date(b.createdAt).getTime() -
+                      new Date(a.createdAt).getTime(),
+                  )
+                  .map(({ id, latitude, longitude, hasPower, createdAt }) => (
+                    <button
+                      onClick={() =>
+                        map?.flyTo([latitude, longitude], 16, {
+                          animate: true,
+                          duration: 0.8,
+                        })
+                      }
+                      key={id}
+                      className={twMerge(
+                        "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
+                        !hasPower &&
+                          "border-slate-800 bg-slate-800 text-yellow-400",
+                      )}
+                    >
+                      <div
                         className={twMerge(
-                          "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
-                          !hasPower &&
-                            "border-slate-800 bg-slate-800 text-yellow-400",
+                          "flex w-full flex-row items-center justify-between gap-2 font-sans",
                         )}
+                        key={id}
                       >
-                        <div
-                          className={twMerge(
-                            "flex w-full flex-row items-center justify-between gap-2 font-sans",
-                          )}
-                          key={id}
-                        >
-                          {hasPower ? (
-                            <span className="mr-2 rounded-full bg-white p-1 text-3xl">
-                              💡
-                            </span>
-                          ) : (
-                            <span className="mr-2 rounded-full bg-white p-1 text-3xl">
-                              🕯️
-                            </span>
-                          )}
-                          clique pour y aller
-                          <TimeAgo date={createdAt} className="ml-auto" />
-                        </div>
-                      </button>
-                    ))}
-                </div>
+                        {hasPower ? (
+                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">
+                            💡
+                          </span>
+                        ) : (
+                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">
+                            🕯️
+                          </span>
+                        )}
+                        clique pour y aller
+                        <TimeAgo date={createdAt} className="ml-auto" />
+                      </div>
+                    </button>
+                  ))}
               </div>
-            </>
-          )}
+            </div>
+          </>
           <p className="mt-8 text-center">
             Codé à la bougie par{" "}
             <a

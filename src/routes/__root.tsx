@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       <QueryClientProvider client={queryClient}>
         <Outlet />
       </QueryClientProvider>
-      <TanStackRouterDevtools />
+      {process.env.NODE_ENV === "development" && <TanStackRouterDevtools />}
     </div>
   ),
 });
