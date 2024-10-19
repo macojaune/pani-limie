@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ky from "ky";
 import { type Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Lightbulb, LightbulbOff } from "lucide-react";
+import {
+  Lightbulb,
+  LightbulbOff,
+  Locate,
+  LocateOff,
+  MapPin,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { twMerge } from "tailwind-merge";
@@ -21,6 +27,8 @@ function HomePage() {
   );
   const [map, setMap] = useState<Map | null>(null);
   const [selected, setSelected] = useState<boolean | null>(null);
+  const [isLoading, setLoading] = useState(false);
+
   const queryClient = useQueryClient();
   const { data: powerStatuses } = useQuery<PowerStatus[]>({
     queryKey: ["powerStatuses"],
@@ -47,18 +55,12 @@ function HomePage() {
       queryClient.invalidateQueries({ queryKey: ["powerStatuses"] }),
   });
 
-  useEffect(() => {
-    navigator.permissions.query({ name: "geolocation" }).then((result) => {
-      if (result.state === "granted") {
-        getLocation();
-      }
-    });
-  }, []);
-
   const getLocation = () => {
+    setLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUserLocation([position.coords.latitude, position.coords.longitude]);
+        setLoading(false);
         if (map)
           map.flyTo([position.coords.latitude, position.coords.longitude], 16, {
             animate: true,
@@ -67,7 +69,9 @@ function HomePage() {
       },
       (error) => {
         console.error("Error getting user location:", error);
+        setLoading(false);
       },
+      { enableHighAccuracy: true, timeout: 4000 },
     );
   };
   const displayMap = useMemo(
@@ -97,10 +101,18 @@ function HomePage() {
           {!userLocation && (
             <div className="gap-3 flex flex-col items-center justify-center">
               <button
-                className="rounded-sm border border-gray-300 px-4 py-2 font-bold text-gray-700 transition duration-300 hover:bg-gray-100"
+                className="flex flex-row md:flex-col md:items-center items-end justify-center gap-2 rounded-sm border border-gray-300 px-4 py-2 font-bold text-gray-700 transition duration-300 hover:bg-gray-100"
                 onClick={getLocation}
               >
-                Activer ma localisation
+                <MapPin
+                  size={24}
+                  className={twMerge(
+                    isLoading && "animate-pulse text-slate-800",
+                  )}
+                />
+                {isLoading
+                  ? "On récupère ta position"
+                  : "Activer ma localisation"}
               </button>
               <p className="text-sm text-justify w-3/4">
                 Le site est basé sur la participation de la population, plus il
