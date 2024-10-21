@@ -20,25 +20,27 @@ import { createLazyFileRoute, Link } from "@tanstack/react-router";
 export const Route = createLazyFileRoute("/")({
   component: HomePage,
 });
+const POWER_STATE = Object.freeze({ ON: 1, OFF: 0, UNKNOWN: 2 });
+type StatusType = (typeof POWER_STATE)[keyof typeof POWER_STATE];
 
 function HomePage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
   const [map, setMap] = useState<Map | null>(null);
-  const [selected, setSelected] = useState<boolean | null>(null);
+  const [selected, setSelected] = useState<StatusType>(POWER_STATE.UNKNOWN);
   const [isLoading, setLoading] = useState(false);
 
   const queryClient = useQueryClient();
+
   const { data: powerStatuses } = useQuery<PowerStatus[]>({
     queryKey: ["powerStatuses"],
     queryFn: async () =>
       await ky.get(import.meta.env.VITE_API_URL + "/power-statuses").json(),
   });
 
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending, isSuccess } = useMutation({
     mutationFn: async (hasPower: boolean) => {
-      setSelected(hasPower);
       const newStatus: InsertPowerStatus = {
         id: Date.now().toString(),
         latitude: userLocation?.[0] ?? 0,
@@ -51,8 +53,16 @@ function HomePage() {
       });
       return newStatus;
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: ["powerStatuses"] }),
+
+    onSettled: (data, error) => {
+      if (error) setSelected(POWER_STATE.UNKNOWN);
+      if (map && data)
+        map.flyTo([data.latitude, data.longitude], 16, {
+          animate: true,
+          duration: 0.2,
+        });
+      return queryClient.invalidateQueries({ queryKey: ["powerStatuses"] });
+    },
   });
 
   const getLocation = () => {
@@ -90,7 +100,10 @@ function HomePage() {
     ),
     [powerStatuses],
   );
-
+  const handleSubmit = (hasPower: boolean) => {
+    setSelected(hasPower ? POWER_STATE.ON : POWER_STATE.OFF);
+    mutate(hasPower);
+  };
   return (
     <>
       <main className="flex flex-grow flex-col md:flex-row">
@@ -122,31 +135,52 @@ function HomePage() {
           )}
           <>
             {userLocation && (
-              <div className="flex w-full flex-col gap-4 md:flex-row">
-                <button
-                  onClick={() => mutate(true)}
-                  className="flex w-full flex-row items-center justify-center gap-2 rounded-md bg-amber-400 px-6 py-4 font-bold text-slate-800 transition duration-300 hover:bg-yellow-400 hover:text-white md:flex-col md:gap-4"
-                >
-                  <Lightbulb
-                    size={33}
-                    className={twMerge(
-                      isPending && selected === true && "animate-ping",
-                    )}
-                  />{" "}
-                  J'ai de l'électricité
-                </button>
-                <button
-                  onClick={() => mutate(false)}
-                  className="flex w-full flex-row items-center justify-center gap-2 rounded-md bg-slate-800 px-6 py-4 font-bold text-white transition duration-300 hover:text-amber-400 md:flex-col md:gap-4"
-                >
-                  <LightbulbOff
-                    size={33}
-                    className={twMerge(
-                      isPending && selected === false && "animate-ping",
-                    )}
-                  />
-                  J'ai pas d'électricité
-                </button>
+              <div className="flex w-full flex-col gap-4 md:flex-row flex-wrap">
+                {((!isSuccess && selected !== POWER_STATE.OFF) ||
+                  (isSuccess && selected === POWER_STATE.OFF)) && (
+                  <button
+                    onClick={() => handleSubmit(true)}
+                    className="flex grow flex-row items-center justify-center gap-2 rounded-md bg-amber-400 px-6 py-4 font-bold text-slate-800 transition duration-300 hover:bg-yellow-400 hover:text-white md:flex-col md:gap-4"
+                  >
+                    <Lightbulb
+                      size={33}
+                      className={twMerge(
+                        isPending &&
+                          selected === POWER_STATE.ON &&
+                          "animate-ping",
+                      )}
+                    />{" "}
+                    J'ai de l'électricité
+                  </button>
+                )}
+                {isSuccess && selected === POWER_STATE.ON && (
+                  <p className="text-center px-4 py-2 w-full md:w-3/5 self-center bg-amber-400/20 rounded">
+                    Super ! Reviens nous dire si ça change.
+                  </p>
+                )}
+                {((!isSuccess && selected !== POWER_STATE.ON) ||
+                  (isSuccess && selected === POWER_STATE.ON)) && (
+                  <button
+                    onClick={() => handleSubmit(false)}
+                    className="flex flex-row grow items-center justify-center gap-2 rounded-md bg-slate-800 px-6 py-4 font-bold text-white transition duration-300 md:grow hover:text-amber-400 md:flex-col md:gap-4"
+                  >
+                    <LightbulbOff
+                      size={33}
+                      className={twMerge(
+                        isPending &&
+                          selected === POWER_STATE.OFF &&
+                          "animate-ping",
+                      )}
+                    />
+                    J'ai pas d'électricité
+                  </button>
+                )}
+                {isSuccess && selected === POWER_STATE.OFF && (
+                  <p className="text-center px-4 py-2 w-full md:w-3/5 self-center bg-amber-400/20 rounded">
+                    🕯️ Bon Courage… <br className="hidden md:inline" />
+                    Reviens nous dire quand ça change.
+                  </p>
+                )}
               </div>
             )}
             <div className="relative mt-8 w-full">
@@ -177,7 +211,6 @@ function HomePage() {
                         className={twMerge(
                           "flex w-full flex-row items-center justify-between gap-2 font-sans",
                         )}
-                        key={id}
                       >
                         {hasPower ? (
                           <span className="mr-2 rounded-full bg-white p-1 text-3xl">
