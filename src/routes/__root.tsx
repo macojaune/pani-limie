@@ -8,7 +8,7 @@ export const Route = createRootRoute({
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center gap-4 bg-slate-900 p-4 text-white md:flex-row">
         <Link to="/">
-          <h1 className="text-3xl font-bold text-amber-400">Pani limiè !</h1>
+          <h1 className="text-3xl font-bold text-amber-400">Pani limyè !</h1>
         </Link>
         <span>On dit merci EDF PEI…</span>
       </header>

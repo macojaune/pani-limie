@@ -10,10 +10,20 @@ const obfuscateCoordinate = (coord: number, factor = 0.001) => {
 const app = new Hono();
 app.use(
   "/api/*",
-  cors({ origin: ["http://localhost:5173", "https://pani-limie.netlify.app"] }),
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://pani-limie.netlify.app",
+      "https://www.pani-limie.netlify.app",
+      "https://pani-limie.marvinl.com",
+      "https://pani-limye.marvinl.com",
+      "https://www.pani-limye.marvinl.com",
+      "https://www.pani-limie.marvinl.com",
+    ],
+  }),
 );
 
-app.get("/", (c) => c.text("Pani limiè!"));
+app.get("/", (c) => c.text("Pani limyè!"));
 
 app.get("/api/power-statuses", async (c) => {
   try {

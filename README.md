@@ -1,8 +1,8 @@
-# Pani Limiè
+# Pani Limyè
 
 ## Description du projet
 
-Pani Limiè est une application web destinée à cartographier les coupures d'électricité du réseau EDF en Guadeloupe liées aux mouvements sociaux et grèves. L'objectif est de fournir une information en temps réel aux utilisateurs sur l'état du réseau électrique dans différentes zones de l'île.
+Pani Limyè est une application web destinée à cartographier les coupures d'électricité du réseau EDF en Guadeloupe liées aux mouvements sociaux et grèves. L'objectif est de fournir une information en temps réel aux utilisateurs sur l'état du réseau électrique dans différentes zones de l'île.
 
 ## Technologies utilisées
 
@@ -19,7 +19,7 @@ Pani Limiè est une application web destinée à cartographier les coupures d'é
 1. Clonez le dépôt :
    ```
    git clone https://github.com/votre-username/pani-limie.git
-   cd pani-limie
+   cd pani-limye
    ```
 
 2. Installez les dépendances pour le frontend et le backend :
