@@ -186,6 +186,11 @@ function HomePage() {
             <div className="relative mt-8 w-full">
               <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
               <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
+                {powerStatuses?.length === 0 && (
+                  <p className="text-center">
+                    Pas de contributions dans les 6 dernières heures.{" "}
+                  </p>
+                )}
                 {powerStatuses
                   ?.sort(
                     (a, b) =>
