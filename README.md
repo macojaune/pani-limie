@@ -61,7 +61,7 @@ Pani Limyè est une application web destinée à cartographier les coupures d'é
 
 ## Déploiement
 
-L'application est actuellement déployée sur Netlify à l'adresse : https://pani-limie.netlify.app
+L'application est actuellement déployée sur Netlify à l'adresse : https://pani-limye.marvinl.com
 
 Pour déployer une nouvelle version :
 
