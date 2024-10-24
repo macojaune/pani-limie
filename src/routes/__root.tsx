@@ -9,7 +9,7 @@ export const Route = createRootRoute({
       <header className="flex flex-row items-center justify-between gap-4 bg-slate-900 p-4 text-white  ">
         <div
           className={
-            location.hostname.includes("pani-dlo")
+            location.pathname.includes("pani-dlo")
               ? "order-2 text-right"
               : "order-1 text-left"
           }
@@ -17,21 +17,21 @@ export const Route = createRootRoute({
           <Link to="/">
             <h1 className="text-3xl font-bold text-amber-400">Pani limyè</h1>
           </Link>
-          {location.hostname.includes("pani-limye") && (
+          {!location.pathname.includes("pani-dlo") && (
             <span className="text-xs">On dit merci EDF PEI…</span>
           )}
         </div>
         <div
           className={
-            location.hostname.includes("pani-limye")
-              ? "order-2 text-right"
-              : "order-1 text-left"
+            location.pathname.includes("pani-dlo")
+              ? "order-1 text-left"
+              : "order-2 text-right"
           }
         >
           <Link to="/pani-dlo">
             <h1 className="text-3xl font-bold text-cyan-400">Pani Dlo</h1>
           </Link>
-          {location.hostname.includes("pani-dlo") && (
+          {location.pathname.includes("pani-dlo") && (
             <span className="text-xs">On dit merci la Guadeloupe</span>
           )}
         </div>
