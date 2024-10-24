@@ -12,23 +12,31 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { twMerge } from "tailwind-merge";
-import { InsertPowerStatus, type PowerStatus } from "../../server/db/schema";
+import {
+  InsertPowerStatus,
+  InsertWaterStatus,
+  WaterStatus,
+  type PowerStatus,
+} from "../../server/db/schema";
 import StatusList from "../components/status-marker-list";
 import TimeAgo from "../components/time-ago";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import StatusSubmission from "../components/status-submission";
+import StatusHistoryItem from "../components/status-history-item";
+import { LayersControl } from "react-leaflet";
 
 export const Route = createLazyFileRoute("/")({
   component: HomePage,
 });
-const POWER_STATE = Object.freeze({ ON: 1, OFF: 0, UNKNOWN: 2 });
-type StatusType = (typeof POWER_STATE)[keyof typeof POWER_STATE];
+export const POWER_STATE = Object.freeze({ ON: 1, OFF: 0, UNKNOWN: 2 });
+export type StatusType = (typeof POWER_STATE)[keyof typeof POWER_STATE];
 
-function HomePage() {
+export function HomePage({ isWater = false }: { isWater?: boolean }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
   const [map, setMap] = useState<Map | null>(null);
-  const [selected, setSelected] = useState<StatusType>(POWER_STATE.UNKNOWN);
+  const [error, setError] = useState<null | Error>(null);
   const [isLoading, setLoading] = useState(false);
 
   const queryClient = useQueryClient();
@@ -39,13 +47,19 @@ function HomePage() {
       await ky.get(import.meta.env.VITE_API_URL + "/power-statuses").json(),
   });
 
+  const { data: waterStatuses } = useQuery<PowerStatus[]>({
+    queryKey: ["waterStatuses"],
+    queryFn: async () =>
+      await ky.get(import.meta.env.VITE_API_URL + "/water-statuses").json(),
+  });
+
   const { mutate, isPending, isSuccess } = useMutation({
-    mutationFn: async (hasPower: boolean) => {
+    mutationFn: async (isOn: boolean) => {
       const newStatus: InsertPowerStatus = {
         id: Date.now().toString(),
         latitude: userLocation?.[0] ?? 0,
         longitude: userLocation?.[1] ?? 0,
-        hasPower,
+        isOn,
         createdAt: new Date(),
       };
       await ky.post(import.meta.env.VITE_API_URL + "/power-status", {
@@ -54,8 +68,11 @@ function HomePage() {
       return newStatus;
     },
 
-    onSettled: (data, error) => {
-      if (error) setSelected(POWER_STATE.UNKNOWN);
+    onSettled: async (data, error) => {
+      if (error) {
+        setError(error);
+        return;
+      }
       if (map && data)
         map.flyTo([data.latitude, data.longitude], 16, {
           animate: true,
@@ -64,6 +81,54 @@ function HomePage() {
       return queryClient.invalidateQueries({ queryKey: ["powerStatuses"] });
     },
   });
+
+  const {
+    mutate: mutateWater,
+    isPending: isPendingWater,
+    isSuccess: isSuccessWater,
+  } = useMutation({
+    mutationFn: async (isOn: boolean) => {
+      const newStatus: InsertWaterStatus = {
+        id: Date.now().toString(),
+        latitude: userLocation?.[0] ?? 0,
+        longitude: userLocation?.[1] ?? 0,
+        isOn,
+        createdAt: new Date(),
+      };
+      await ky.post(import.meta.env.VITE_API_URL + "/water-status", {
+        json: newStatus,
+      });
+      return newStatus;
+    },
+
+    onSettled: async (data, error) => {
+      if (error) {
+        setError(error);
+        return;
+      }
+      if (map && data)
+        map.flyTo([data.latitude, data.longitude], 16, {
+          animate: true,
+          duration: 0.2,
+        });
+      return queryClient.invalidateQueries({ queryKey: ["waterStatuses"] });
+    },
+  });
+  const statuses = useMemo<
+    ((PowerStatus | WaterStatus) & { type: string })[]
+  >(() => {
+    const result = [];
+    if (powerStatuses)
+      result.push(...powerStatuses.map((ps) => ({ ...ps, type: "power" })));
+    if (waterStatuses)
+      result.push(...waterStatuses.map((ws) => ({ ...ws, type: "water" })));
+    if (result.length > 0)
+      return result.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    return result;
+  }, [powerStatuses, waterStatuses]);
 
   const getLocation = () => {
     setLoading(true);
@@ -94,16 +159,19 @@ function HomePage() {
         style={{ height: "100%", minHeight: "400px" }}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <LayersControl position="topleft" collapsed={false}>
+          <LayersControl.Overlay name="Électricité" checked={!isWater}>
+            <StatusList statuses={powerStatuses} type="power" />
+          </LayersControl.Overlay>
+          <LayersControl.Overlay name="Eau" checked={isWater}>
+            <StatusList statuses={waterStatuses} type="water" />
+          </LayersControl.Overlay>
+        </LayersControl>
         {userLocation && <Marker position={userLocation} />}
-        <StatusList powerStatuses={powerStatuses} />
       </MapContainer>
     ),
-    [powerStatuses],
+    [powerStatuses, waterStatuses, userLocation],
   );
-  const handleSubmit = (hasPower: boolean) => {
-    setSelected(hasPower ? POWER_STATE.ON : POWER_STATE.OFF);
-    mutate(hasPower);
-  };
   return (
     <>
       <main className="flex flex-grow flex-col md:flex-row">
@@ -134,102 +202,44 @@ function HomePage() {
             </div>
           )}
           <>
-            {userLocation && (
-              <div className="flex w-full flex-col gap-4 md:flex-row flex-wrap">
-                {((!isSuccess && selected !== POWER_STATE.OFF) ||
-                  (isSuccess && selected === POWER_STATE.OFF)) && (
-                  <button
-                    onClick={() => handleSubmit(true)}
-                    className="flex grow flex-row items-center justify-center gap-2 rounded-md bg-amber-400 px-6 py-4 font-bold text-slate-800 transition duration-300 hover:bg-yellow-400 hover:text-white md:flex-col md:gap-4"
-                  >
-                    <Lightbulb
-                      size={33}
-                      className={twMerge(
-                        isPending &&
-                          selected === POWER_STATE.ON &&
-                          "animate-ping",
-                      )}
-                    />{" "}
-                    J'ai de l'électricité
-                  </button>
-                )}
-                {isSuccess && selected === POWER_STATE.ON && (
-                  <p className="text-center px-4 py-2 w-full md:w-3/5 self-center bg-amber-400/20 rounded">
-                    Super ! Reviens nous dire si ça change.
-                  </p>
-                )}
-                {((!isSuccess && selected !== POWER_STATE.ON) ||
-                  (isSuccess && selected === POWER_STATE.ON)) && (
-                  <button
-                    onClick={() => handleSubmit(false)}
-                    className="flex flex-row grow items-center justify-center gap-2 rounded-md bg-slate-800 px-6 py-4 font-bold text-white transition duration-300 md:grow hover:text-amber-400 md:flex-col md:gap-4"
-                  >
-                    <LightbulbOff
-                      size={33}
-                      className={twMerge(
-                        isPending &&
-                          selected === POWER_STATE.OFF &&
-                          "animate-ping",
-                      )}
-                    />
-                    J'ai pas d'électricité
-                  </button>
-                )}
-                {isSuccess && selected === POWER_STATE.OFF && (
-                  <p className="text-center px-4 py-2 w-full md:w-3/5 self-center bg-amber-400/20 rounded">
-                    🕯️ Bon Courage… <br className="hidden md:inline" />
-                    Reviens nous dire quand ça change.
-                  </p>
-                )}
-              </div>
+            {error && (
+              <span className="text-red-500">
+                Une erreur s'est produite, essaie de recommencer…
+              </span>
             )}
+            {userLocation && (
+              <>
+                <StatusSubmission
+                  handleSubmit={mutate}
+                  isPending={isPending}
+                  isSuccess={isSuccess}
+                />
+                <StatusSubmission
+                  handleSubmit={mutateWater}
+                  isPending={isPendingWater}
+                  isSuccess={isSuccessWater}
+                  type="water"
+                  className="mt-4"
+                />
+              </>
+            )}
+
             <div className="relative mt-8 w-full">
               <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
               <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
-                {powerStatuses?.length === 0 && (
+                {statuses?.length === 0 && (
                   <p className="text-center">
                     Pas de contributions dans les 6 dernières heures.{" "}
                   </p>
                 )}
-                {powerStatuses
+                {statuses
                   ?.sort(
                     (a, b) =>
                       new Date(b.createdAt).getTime() -
                       new Date(a.createdAt).getTime(),
                   )
-                  .map(({ id, latitude, longitude, hasPower, createdAt }) => (
-                    <button
-                      onClick={() =>
-                        map?.flyTo([latitude, longitude], 16, {
-                          animate: true,
-                          duration: 0.8,
-                        })
-                      }
-                      key={id}
-                      className={twMerge(
-                        "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
-                        !hasPower &&
-                          "border-slate-800 bg-slate-800 text-yellow-400",
-                      )}
-                    >
-                      <div
-                        className={twMerge(
-                          "flex w-full flex-row items-center justify-between gap-2 font-sans",
-                        )}
-                      >
-                        {hasPower ? (
-                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">
-                            💡
-                          </span>
-                        ) : (
-                          <span className="mr-2 rounded-full bg-white p-1 text-3xl">
-                            🕯️
-                          </span>
-                        )}
-                        clique pour y aller
-                        <TimeAgo date={createdAt} className="ml-auto" />
-                      </div>
-                    </button>
+                  .map(({ id, ...rest }) => (
+                    <StatusHistoryItem key={id} map={map} {...rest} />
                   ))}
               </div>
             </div>
