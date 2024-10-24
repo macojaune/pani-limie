@@ -16,10 +16,17 @@ import { Route as rootRoute } from './routes/__root'
 
 // Create Virtual Routes
 
+const PaniDloLazyImport = createFileRoute('/pani-dlo')()
 const MentionsLegalesLazyImport = createFileRoute('/mentions-legales')()
 const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
+
+const PaniDloLazyRoute = PaniDloLazyImport.update({
+  id: '/pani-dlo',
+  path: '/pani-dlo',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/pani-dlo.lazy').then((d) => d.Route))
 
 const MentionsLegalesLazyRoute = MentionsLegalesLazyImport.update({
   id: '/mentions-legales',
@@ -53,6 +60,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentionsLegalesLazyImport
       parentRoute: typeof rootRoute
     }
+    '/pani-dlo': {
+      id: '/pani-dlo'
+      path: '/pani-dlo'
+      fullPath: '/pani-dlo'
+      preLoaderRoute: typeof PaniDloLazyImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -61,36 +75,41 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
   '/mentions-legales': typeof MentionsLegalesLazyRoute
+  '/pani-dlo': typeof PaniDloLazyRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
   '/mentions-legales': typeof MentionsLegalesLazyRoute
+  '/pani-dlo': typeof PaniDloLazyRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
   '/mentions-legales': typeof MentionsLegalesLazyRoute
+  '/pani-dlo': typeof PaniDloLazyRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/mentions-legales'
+  fullPaths: '/' | '/mentions-legales' | '/pani-dlo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/mentions-legales'
-  id: '__root__' | '/' | '/mentions-legales'
+  to: '/' | '/mentions-legales' | '/pani-dlo'
+  id: '__root__' | '/' | '/mentions-legales' | '/pani-dlo'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
   MentionsLegalesLazyRoute: typeof MentionsLegalesLazyRoute
+  PaniDloLazyRoute: typeof PaniDloLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   MentionsLegalesLazyRoute: MentionsLegalesLazyRoute,
+  PaniDloLazyRoute: PaniDloLazyRoute,
 }
 
 export const routeTree = rootRoute
@@ -106,7 +125,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/mentions-legales"
+        "/mentions-legales",
+        "/pani-dlo"
       ]
     },
     "/": {
@@ -114,6 +134,9 @@ export const routeTree = rootRoute
     },
     "/mentions-legales": {
       "filePath": "mentions-legales.lazy.tsx"
+    },
+    "/pani-dlo": {
+      "filePath": "pani-dlo.lazy.tsx"
     }
   }
 }
