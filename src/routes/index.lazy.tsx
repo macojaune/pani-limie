@@ -1,16 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import ky from "ky";
-import { type Map } from "leaflet";
+import type {
+  Map as LeafletMap,
+  Control,
+  Marker as LeafletMarker,
+  FeatureGroup as LeafletFeatureGroup,
+} from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MapPin } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import {
-  Lightbulb,
-  LightbulbOff,
-  Locate,
-  LocateOff,
-  MapPin,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+  FeatureGroup,
+  LayersControl,
+  MapContainer,
+  Marker,
+  TileLayer,
+} from "react-leaflet";
 import { twMerge } from "tailwind-merge";
 import {
   InsertPowerStatus,
@@ -18,12 +24,9 @@ import {
   WaterStatus,
   type PowerStatus,
 } from "../../server/db/schema";
-import StatusList from "../components/status-marker-list";
-import TimeAgo from "../components/time-ago";
-import { createLazyFileRoute, Link } from "@tanstack/react-router";
-import StatusSubmission from "../components/status-submission";
 import StatusHistoryItem from "../components/status-history-item";
-import { LayersControl } from "react-leaflet";
+import StatusList from "../components/status-marker-list";
+import StatusSubmission from "../components/status-submission";
 
 export const Route = createLazyFileRoute("/")({
   component: HomePage,
@@ -35,9 +38,12 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
-  const [map, setMap] = useState<Map | null>(null);
+  const [map, setMap] = useState<LeafletMap | null>(null);
   const [error, setError] = useState<null | Error>(null);
   const [isLoading, setLoading] = useState(false);
+  const controlRef = useRef<Control.Layers>(null!);
+  const layersRef = useRef<(LeafletFeatureGroup | null)[]>([]);
+  const markerRefMap = useRef(new Map<string, LeafletMarker | null>());
 
   const queryClient = useQueryClient();
 
@@ -149,6 +155,20 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
       { enableHighAccuracy: true, timeout: 4000 },
     );
   };
+
+  const setRef = (id: string, element: LeafletMarker | null) => {
+    if (element) {
+      markerRefMap.current.set(id, element);
+    } else {
+      markerRefMap.current.delete(id);
+    }
+  };
+  const showPopup = (id: string) => {
+    const marker = markerRefMap.current.get(id);
+    if (marker) {
+      marker.openPopup();
+    }
+  };
   const displayMap = useMemo(
     () => (
       <MapContainer
@@ -159,12 +179,25 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
         style={{ height: "100%", minHeight: "400px" }}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <LayersControl position="topleft" collapsed={false}>
+        {userLocation && <Marker position={userLocation} />}
+        <LayersControl position="topleft" collapsed={false} ref={controlRef}>
           <LayersControl.Overlay name="Électricité" checked={!isWater}>
-            <StatusList statuses={powerStatuses} type="power" />
+            <FeatureGroup ref={(el) => (layersRef.current[0] = el)}>
+              <StatusList
+                statuses={powerStatuses}
+                type="power"
+                setRef={setRef}
+              />
+            </FeatureGroup>
           </LayersControl.Overlay>
           <LayersControl.Overlay name="Eau" checked={isWater}>
-            <StatusList statuses={waterStatuses} type="water" />
+            <FeatureGroup ref={(el) => (layersRef.current[1] = el)}>
+              <StatusList
+                statuses={waterStatuses}
+                type="water"
+                setRef={setRef}
+              />
+            </FeatureGroup>
           </LayersControl.Overlay>
         </LayersControl>
         {userLocation && <Marker position={userLocation} />}
@@ -238,8 +271,39 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
                       new Date(b.createdAt).getTime() -
                       new Date(a.createdAt).getTime(),
                   )
-                  .map(({ id, ...rest }) => (
-                    <StatusHistoryItem key={id} map={map} {...rest} />
+                  .map(({ id, latitude, longitude, type, ...rest }) => (
+                    <StatusHistoryItem
+                      key={id}
+                      type={type}
+                      handleClick={() => {
+                        const powerLayer =
+                          layersRef?.current[0]?.getLayers()[0];
+                        const waterLayer =
+                          layersRef?.current[1]?.getLayers()[0];
+                        const controls = controlRef.current;
+                        if (!powerLayer || !waterLayer || !controls) return;
+
+                        if (type === "power") {
+                          controls._layerControlInputs[0].checked = true;
+                          if (!map?.hasLayer(powerLayer)) {
+                            map?.addLayer(powerLayer);
+                          }
+                        }
+                        if (type === "water") {
+                          controls._layerControlInputs[1].checked = true;
+
+                          if (!map?.hasLayer(waterLayer)) {
+                            map?.addLayer(waterLayer);
+                          }
+                        }
+                        map?.flyTo([latitude, longitude], 16, {
+                          animate: true,
+                          duration: 0.8,
+                        });
+                        setTimeout(() => showPopup(id), 1200);
+                      }}
+                      {...rest}
+                    />
                   ))}
               </div>
             </div>

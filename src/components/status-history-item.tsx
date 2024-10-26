@@ -2,23 +2,17 @@ import { FC } from "react";
 import { type Map } from "leaflet";
 import { twMerge } from "tailwind-merge";
 import TimeAgo from "./time-ago";
+import { Popup } from "react-leaflet";
 
 const StatusHistoryItem: FC<{
-  latitude: number;
-  longitude: number;
   isOn: boolean;
   createdAt: Date;
-  map: Map | null;
   type: string | "power" | "water";
-}> = ({ latitude, longitude, isOn, createdAt, map, type }) => {
+  handleClick: () => void;
+}> = ({ isOn, createdAt, type, handleClick }) => {
   return (
     <button
-      onClick={() =>
-        map?.flyTo([latitude, longitude], 16, {
-          animate: true,
-          duration: 0.8,
-        })
-      }
+      onClick={handleClick}
       className={twMerge(
         "flex w-full items-center justify-between rounded border border-amber-500/30 bg-amber-400/20 p-2 font-mono text-xs",
         type === "water" && "border-cyan-500/30 bg-cyan-200 text-slate-800",

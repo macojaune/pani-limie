@@ -1,16 +1,16 @@
+import { divIcon, point } from "leaflet";
 import { Droplets, Lightbulb, LightbulbOff, Milk } from "lucide-react";
-import { useState } from "react";
-import { Marker, Popup, useMapEvents } from "react-leaflet";
+import { Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
+import { twMerge } from "tailwind-merge";
 import { WaterStatus, type PowerStatus } from "../../server/db/schema";
 import TimeAgo from "./time-ago";
-import { divIcon, point } from "leaflet";
-import { twMerge } from "tailwind-merge";
 
 const StatusList = ({
   statuses,
   type,
-}:
+  setRef,
+}: (
   | {
       statuses: PowerStatus[] | undefined;
       type: "power";
@@ -18,31 +18,12 @@ const StatusList = ({
   | {
       statuses: WaterStatus[] | undefined;
       type: "water";
-    }) => {
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null,
-  );
-  const map = useMapEvents({
-    locationfound: (e) => {
-      console.log("location found", e);
-      setUserLocation([e.latlng.lat, e.latlng.lng]);
-      map.fitBounds(
-        statuses?.map(({ latitude, longitude }) => [latitude, longitude]) as [
-          number,
-          number,
-        ][],
-        {
-          animate: true,
-          duration: 0.2,
-          padding: [150, 150],
-        },
-      );
-    },
-  });
-
+    }
+) & {
+  setRef: (id: string, el: any | null) => void;
+}) => {
   return (
     <>
-      {userLocation && <Marker position={userLocation} />}
       <MarkerClusterGroup
         iconCreateFunction={(cluster) => {
           const markers = cluster.getAllChildMarkers().sort((a, b) => {
@@ -86,6 +67,7 @@ const StatusList = ({
               key={id}
               position={[latitude, longitude]}
               title={`${type}_${isOn ? "on" : "off"}_${createdAt}`}
+              ref={(el) => setRef(id, el)}
             >
               <Popup>
                 {type === "power" &&
