@@ -40,7 +40,7 @@ app.get("/api/power-statuses", async (c) => {
       })
       .from(powerStatuses)
       .where(
-        gte(powerStatuses.createdAt, new Date(Date.now() - 6 * 60 * 60 * 1000)),
+        gte(powerStatuses.createdAt, new Date(Date.now() - 2 * 60 * 60 * 1000)),
       ) //limit to 6 hours ago
       .orderBy(desc(powerStatuses.createdAt))
       .groupBy(powerStatuses.latitude, powerStatuses.longitude);
@@ -88,7 +88,7 @@ app.get("/api/water-statuses", async (c) => {
       })
       .from(waterStatuses)
       .where(
-        gte(waterStatuses.createdAt, new Date(Date.now() - 6 * 60 * 60 * 1000)),
+        gte(waterStatuses.createdAt, new Date(Date.now() - 3 * 60 * 60 * 1000)),
       ) //limit to 6 hours ago
       .orderBy(desc(waterStatuses.createdAt))
       .groupBy(waterStatuses.latitude, waterStatuses.longitude);
