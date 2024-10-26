@@ -261,8 +261,13 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
               <h3 className="mb-4 text-left text-lg font-medium">Historique</h3>
               <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
                 {statuses?.length === 0 && (
-                  <p className="text-center">
-                    Pas de contributions dans les 6 dernières heures.{" "}
+                  <p className="text-center bg-red-300 p-4">
+                    Petit soucis technique, j'essaie de régler ça rapidement…
+                    <br />
+                    (on a été trop nombreux·ses à utiliser le site)
+                    <br />
+                    Merci pour ta patience et Kouraj !
+                    {/* Pas de contributions dans les 6 dernières heures.{" "} */}
                   </p>
                 )}
                 {statuses
