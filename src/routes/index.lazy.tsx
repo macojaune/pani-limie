@@ -262,12 +262,12 @@ export function HomePage({ isWater = false }: { isWater?: boolean }) {
               <div className="flex max-h-52 flex-col items-center gap-2 overflow-auto">
                 {statuses?.length === 0 && (
                   <p className="text-center bg-red-300 p-4">
-                    Petit soucis technique, j'essaie de régler ça rapidement…
+                    {/* Petit soucis technique, j'essaie de régler ça rapidement…
                     <br />
                     (on a été trop nombreux·ses à utiliser le site)
                     <br />
-                    Merci pour ta patience et Kouraj !
-                    {/* Pas de contributions dans les 6 dernières heures.{" "} */}
+                    Merci pour ta patience et Kouraj ! */}
+                    Pas de contributions dans les 8 dernières heures.
                   </p>
                 )}
                 {statuses
